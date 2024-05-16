@@ -18,6 +18,7 @@ func SendNotificationBulk(Message *messaging.MulticastMessage) error {
 	absPath, _ := filepath.Abs("utils/openzo-rt-firebase-adminsdk-u6rwj-1989861d1f.json")
 
 	opt := option.WithCredentialsFile(absPath)
+	
 	// config := &firebase.Config{ProjectID: "openzo-rt"}
 	// println()
 	app, err := firebase.NewApp(context.Background(), nil, opt)
