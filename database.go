@@ -12,7 +12,7 @@ import (
 
 func connectToDB(cfg *config.Config) (*gorm.DB, error) {
 
-	if cfg.MODE == "prdoduction" {
+	if cfg.MODE == "production" {
 		dsn := cfg.DB_URL
 
 		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -31,7 +31,6 @@ func connectToDB(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 	db.Migrator().AutoMigrate(&models.LocalNotification{})
-
 
 	return db, nil
 }
