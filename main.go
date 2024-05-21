@@ -79,6 +79,8 @@ func main() {
 type Notification struct {
 	Message  string `json:"message"`
 	FCMToken string `json:"fcm_token"`
+	Data     string `json:"data"`
+	Topic    string `json:"topic"`
 }
 
 func consumeKafka() {
@@ -101,17 +103,27 @@ func consumeKafka() {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			// application-specific processing
+
 			err := json.Unmarshal(ev.Value, &notification)
 			if err != nil {
 				fmt.Println("Error unmarshalling JSON: ", err)
 			}
+
+			notifDataMap := map[string]string{}
+			err = json.Unmarshal([]byte(notification.Data), &notifDataMap)
+			if err != nil {
+				fmt.Println("Error unmarshalling JSON: ", err)
+			}
+
 			fmt.Println("Sending notification", notification)
 
 			err = utils.SendNotification(&messaging.Message{
 				Notification: &messaging.Notification{
-					Title: "New Order!",
+					Title: notification.Topic + " Notification",
 					Body:  notification.Message,
 				},
+				Data:  notifDataMap,
+				Topic: notification.Topic,
 				Token: notification.FCMToken,
 			})
 
