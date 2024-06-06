@@ -132,8 +132,8 @@ func consumeKafka() {
 						Title: notification.Topic + " Notification",
 						Body:  notification.Message,
 					},
-					Data:  notifDataMap,
-					Topic: notification.Topic,
+					Data: notifDataMap,
+					// Topic: notification.Topic,
 					Token: notification.FCMToken,
 				})
 
