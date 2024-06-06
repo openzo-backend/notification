@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
+	"time"
 
 	"firebase.google.com/go/messaging"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -85,59 +85,70 @@ type Notification struct {
 
 func consumeKafka() {
 	conf := ReadConfig()
-
 	topic := "notification"
-
-	// sets the consumer group ID and offset
 	conf["group.id"] = "go-group-1"
 	conf["auto.offset.reset"] = "earliest"
 
-	// creates a new consumer and subscribes to your topic
-	consumer, _ := kafka.NewConsumer(&conf)
-	consumer.SubscribeTopics([]string{topic}, nil)
 	var notification Notification
-	run := true
-	for run {
-		// consumes messages from the subscribed topic and prints them to the console
-		e := consumer.Poll(1000)
-		switch ev := e.(type) {
-		case *kafka.Message:
-			// application-specific processing
 
-			err := json.Unmarshal(ev.Value, &notification)
-			if err != nil {
-				fmt.Println("Error unmarshalling JSON: ", err)
-			}
-
-			notifDataMap := map[string]string{}
-			err = json.Unmarshal([]byte(notification.Data), &notifDataMap)
-			if err != nil {
-				fmt.Println("Error unmarshalling JSON: ", err)
-			}
-			log.Printf("Notification received: %+v ", notification)
-			fmt.Println("Sending notification", notification)
-
-			err = utils.SendNotification(&messaging.Message{
-				Notification: &messaging.Notification{
-					Title: notification.Topic + " Notification",
-					Body:  notification.Message,
-				},
-				Data:  notifDataMap,
-				Topic: notification.Topic,
-				Token: notification.FCMToken,
-			})
-
-			if err != nil {
-				fmt.Println("Error sending notification: ", err)
-			}
-
-		case kafka.Error:
-			fmt.Fprintf(os.Stderr, "%% Error: %v\n", ev)
-			run = false
+	for {
+		consumer, err := kafka.NewConsumer(&conf)
+		if err != nil {
+			log.Printf("Error creating consumer: %v. Retrying in 5 seconds...", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
+
+		err = consumer.SubscribeTopics([]string{topic}, nil)
+		if err != nil {
+			log.Printf("Error subscribing to topic: %v. Retrying in 5 seconds...", err)
+			consumer.Close()
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		run := true
+		for run {
+			e := consumer.Poll(1000)
+			switch ev := e.(type) {
+			case *kafka.Message:
+				err := json.Unmarshal(ev.Value, &notification)
+				if err != nil {
+					log.Printf("Error unmarshalling JSON: %v", err)
+					continue
+				}
+
+				notifDataMap := map[string]string{}
+				err = json.Unmarshal([]byte(notification.Data), &notifDataMap)
+				if err != nil {
+					log.Printf("Error unmarshalling JSON: %v", err)
+					continue
+				}
+				log.Printf("Notification received: %+v", notification)
+				log.Println("Sending notification", notification)
+
+				err = utils.SendNotification(&messaging.Message{
+					Notification: &messaging.Notification{
+						Title: notification.Topic + " Notification",
+						Body:  notification.Message,
+					},
+					Data:  notifDataMap,
+					Topic: notification.Topic,
+					Token: notification.FCMToken,
+				})
+
+				if err != nil {
+					log.Printf("Error sending notification: %v", err)
+				}
+
+			case kafka.Error:
+				log.Printf("Error: %v", ev)
+				run = false
+			}
+		}
+
+		log.Println("Consumer disconnected. Reconnecting in 5 seconds...")
+		consumer.Close()
+		time.Sleep(5 * time.Second)
 	}
-
-	// closes the consumer connection
-	consumer.Close()
-
 }
