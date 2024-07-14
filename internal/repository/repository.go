@@ -83,7 +83,9 @@ func (r *notificationRepository) DeleteLocalNotification(id string) error {
 func (r *notificationRepository) GetTokensByPincode(pincode string) ([]string, error) {
 	var notification_tokens []string
 	// UserData had pincode 	and token
-	r.db.Model(&models.UserData{}).Where("pincode = ?", pincode).Pluck("notification_token", &notification_tokens)
+	
+	r.db.Table("users").Where("pincode = ?", pincode).Pluck("notification_token", &notification_tokens)
+
 	return notification_tokens, nil
 }
 

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log"
+
 	"firebase.google.com/go/messaging"
 	"github.com/gin-gonic/gin"
 	"github.com/tanush-128/openzo_backend/notification/internal/models"
@@ -26,21 +28,44 @@ func NewLocalNotificationService(LocalNotificationRepository repository.LocalNot
 	return &notificationService{LocalNotificationRepository: LocalNotificationRepository}
 }
 
-
 func (s *notificationService) CreateLocalNotification(ctx *gin.Context, req models.LocalNotification) (models.LocalNotification, error) {
 
 	notification_tokens, err := s.LocalNotificationRepository.GetTokensByPincode(req.Pincode)
 	if err != nil {
 		return models.LocalNotification{}, err
 	}
-	go utils.SendNotificationBulk(&messaging.MulticastMessage{
-		Tokens: notification_tokens,
-		Notification: &messaging.Notification{
-			Title:    req.Title,
-			Body:     req.Body,
-			ImageURL: req.ImageURL,
-		},
-	})
+
+	// rm duplicate tokens
+
+	notification_tokens = utils.RemoveDuplicates(notification_tokens)
+
+	log.Println("notification_tokens :", len(notification_tokens))
+
+	for _, token := range notification_tokens {
+		go utils.SendNotification(&messaging.Message{
+			Notification: &messaging.Notification{
+				Title:    req.Title,
+				Body:     req.Body,
+				ImageURL: req.ImageURL,
+			},
+			Token: token,
+		})
+
+	}
+
+	// err = utils.SendNotificationBulk(&messaging.MulticastMessage{
+	// 	Tokens: notification_tokens,
+
+	// 	Notification: &messaging.Notification{
+
+	// 		Title:    req.Title,
+	// 		Body:     req.Body,
+	// 		ImageURL: req.ImageURL,
+	// 	},
+	// })
+	// if err != nil {
+	// 	return models.LocalNotification{}, err
+	// }
 
 	createdLocalNotification, err := s.LocalNotificationRepository.CreateLocalNotification(req)
 	if err != nil {

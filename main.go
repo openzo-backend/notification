@@ -63,12 +63,12 @@ func main() {
 	})
 
 	// router.Use(middlewares.JwtMiddleware(c))
-	router.POST("/notifications", handler.CreateNotification)
-	router.GET("/notifications/store/:id", handler.GetNotificationsByStoreID)
-	router.GET("/notifications/pincode/:pincode", handler.GetNotifications)
-	router.GET("/notifications/:id", handler.GetNotificationByID)
+	router.POST("/", handler.CreateNotification)
+	router.GET("store/:id", handler.GetNotificationsByStoreID)
+	router.GET("/:id", handler.GetNotificationByID)
+	router.GET("pincode/:pincode", handler.GetNotifications)
 	router.Use(middlewares.NewMiddleware(c).JwtMiddleware)
-	router.DELETE("/notifications/:id", handler.DeleteNotification)
+	router.DELETE("/:id", handler.DeleteNotification)
 
 	// router.Use(middlewares.JwtMiddleware)
 
