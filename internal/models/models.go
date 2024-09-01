@@ -21,3 +21,10 @@ type UserData struct {
 	Country           string `json:"country"`
 	NotificationToken string `json:"notification_token"`
 }
+
+type Notification struct {
+	Message  string `json:"message"`
+	FCMToken string `json:"fcm_token"`
+	Data     string `json:"data,omitempty"`
+	Topic    string `json:"topic,omitempty"`
+}

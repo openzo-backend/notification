@@ -15,8 +15,20 @@ type Handler struct {
 func NewHandler(NotificationService *service.LocalNotificationService) *Handler {
 	return &Handler{NotificationService: *NotificationService}
 }
-
 func (h *Handler) CreateNotification(ctx *gin.Context) {
+	var notification models.Notification
+	ctx.BindJSON(&notification)
+	err := h.NotificationService.CreateNotification(ctx, notification)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Notification sent successfully"})
+
+}
+
+func (h *Handler) CreateLocalNotification(ctx *gin.Context) {
 	var notification models.LocalNotification
 	ctx.BindJSON(&notification)
 	createdNotification, err := h.NotificationService.CreateLocalNotification(ctx, notification)

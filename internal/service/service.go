@@ -13,6 +13,7 @@ import (
 type LocalNotificationService interface {
 
 	//CRUD
+	CreateNotification(ctx *gin.Context, req models.Notification) error
 	CreateLocalNotification(ctx *gin.Context, req models.LocalNotification) (models.LocalNotification, error)
 	GetNotifications(ctx *gin.Context, pincode string) ([]models.LocalNotification, error)
 	GetLocalNotificationByID(ctx *gin.Context, id string) (models.LocalNotification, error)
@@ -26,6 +27,25 @@ type notificationService struct {
 
 func NewLocalNotificationService(LocalNotificationRepository repository.LocalNotificationRepository) LocalNotificationService {
 	return &notificationService{LocalNotificationRepository: LocalNotificationRepository}
+}
+func (s *notificationService) CreateNotification(ctx *gin.Context, req models.Notification) error {
+	// createdNotification, err := s.LocalNotificationRepository.CreateNotification(req)
+	// if err != nil {
+	// 	return models.LocalNotification{}, err // Propagate error
+	// }
+	err := utils.SendNotification(&messaging.Message{
+		Notification: &messaging.Notification{
+			Title: req.Topic,
+			Body:  req.Message,
+		},
+
+		Token: req.FCMToken,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *notificationService) CreateLocalNotification(ctx *gin.Context, req models.LocalNotification) (models.LocalNotification, error) {
@@ -44,10 +64,12 @@ func (s *notificationService) CreateLocalNotification(ctx *gin.Context, req mode
 	for _, token := range notification_tokens {
 		go utils.SendNotification(&messaging.Message{
 			Notification: &messaging.Notification{
-				Title:    req.Title,
-				Body:     req.Body,
+				Title: req.Title,
+				Body:  req.Body,
+
 				ImageURL: req.ImageURL,
 			},
+
 			Token: token,
 		})
 

@@ -64,6 +64,7 @@ func main() {
 
 	// router.Use(middlewares.JwtMiddleware(c))
 	router.POST("/", handler.CreateNotification)
+	router.POST("pincode/", handler.CreateLocalNotification)
 	router.GET("store/:id", handler.GetNotificationsByStoreID)
 	router.GET("/:id", handler.GetNotificationByID)
 	router.GET("pincode/:pincode", handler.GetNotifications)
