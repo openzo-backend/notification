@@ -1,14 +1,14 @@
-# Stage 1: Build the Go application
-FROM golang:1.20-alpine AS builder
+# Stage 1: Build the Go binary using golang:latest
+FROM golang:latest as builder
 
-# Install git (needed for go mod download)
-RUN apk add --no-cache git
-
-# Set the working directory to /app
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy go.mod and go.sum first, and download dependencies (for better caching)
-COPY go.mod go.sum ./
+# Copy go.mod and go.sum files
+COPY go.mod .
+COPY go.sum .
+
+# Download and install Go module dependencies
 RUN go mod download
 
 # Copy the rest of the application source code
@@ -17,17 +17,31 @@ COPY . .
 # Build the Go application
 RUN go build -o main .
 
-# Stage 2: Create the final lightweight image
-FROM alpine:latest
+# Stage 2: Use a smaller Ubuntu base image for runtime
+# FROM ubuntu:22.04
+FROM ubuntu:jammy
 
-# Set the working directory in the minimal container
+# Add the security repository for glibc version 2.35
+RUN echo "deb http://security.ubuntu.com/ubuntu jammy-security main" | tee -a /etc/apt/sources.list
+
+# Install necessary dependencies (like libc6 and ca-certificates)
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    libc6=2.35-0ubuntu3.8 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory in the runtime image
 WORKDIR /app
 
-# Copy the binary from the builder stage
+# Copy the built binary from the builder stage
 COPY --from=builder /app/main .
 
-# Expose the application's port
-EXPOSE 50053
+# Make sure the binary has executable permissions
+RUN chmod +x /app/main
 
-# Command to run the executable
+# Expose necessary ports
+EXPOSE 8081
+EXPOSE 50052
+
+# Command to run the application
 CMD ["./main"]
