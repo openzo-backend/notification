@@ -41,6 +41,10 @@ func main() {
 	notificationRepository := repository.NewLocalNotificationRepository(db)
 	notificationService := service.NewLocalNotificationService(notificationRepository)
 
+	// err = notificationService.Subscribe("576104")
+	if err != nil {
+		log.Fatalf("failed to subscribe to pincode: %v", err)
+	}
 	// Start Kafka consumer in a goroutine
 	go consumeKafka()
 
@@ -71,6 +75,7 @@ func main() {
 	router.GET("store/:id", handler.GetNotificationsByStoreID)
 	router.GET("/:id", handler.GetNotificationByID)
 	router.GET("pincode/:pincode", handler.GetNotifications)
+	router.POST("topic/", handler.CreateLocalNotificationUsingTopic)
 	router.Use(middlewares.NewMiddleware(UserClient).JwtMiddleware)
 	router.DELETE("/:id", handler.DeleteNotification)
 

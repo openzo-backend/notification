@@ -41,6 +41,19 @@ func (h *Handler) CreateLocalNotification(ctx *gin.Context) {
 
 }
 
+func (h *Handler) CreateLocalNotificationUsingTopic(ctx *gin.Context) {
+	var notification models.LocalNotification
+	ctx.BindJSON(&notification)
+	createdNotification, err := h.NotificationService.CreateLocalNotificationUsingTopic(ctx, notification)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, createdNotification)
+
+}
+
 func (h *Handler) GetNotifications(ctx *gin.Context) {
 	pincode := ctx.Param("pincode")
 
